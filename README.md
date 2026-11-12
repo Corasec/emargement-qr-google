@@ -145,6 +145,42 @@ L’installation est terminée.
 Après toute modification du code : **Déployer › Gérer les déploiements** › crayon ✏️ › Version :
 **Nouvelle version** › **Déployer**. L’adresse (et donc les QR codes déjà imprimés) ne change pas.
 
+## Mettre à jour la page publique déployée
+
+`page-publique/index.html` est le **modèle** : il garde le texte
+`COLLEZ_ICI_L_ADRESSE_DE_L_APPLICATION_WEB` pour rester réutilisable. Ne mettez pas votre adresse
+`/exec` dans ce dépôt. La page en ligne est une **copie** du modèle, dans laquelle seule la ligne
+`var API = '…'` change.
+
+Après une modification du modèle, recopiez-le vers la page en ligne en y injectant l’adresse `/exec`.
+Si la page est hébergée sur GitHub Pages, lancez depuis ce dossier :
+
+```bash
+PAGE_REPO=../attendance-sheet   # clone local du dépôt de la page en ligne
+API_URL='https://script.google.com/macros/s/AKfy…/exec'   # adresse de l’étape 4
+
+sed "s#COLLEZ_ICI_L_ADRESSE_DE_L_APPLICATION_WEB#${API_URL}#" page-publique/index.html > "$PAGE_REPO/index.html"
+git -C "$PAGE_REPO" diff --stat          # vérifier : rien d’autre que les changements du modèle
+git -C "$PAGE_REPO" commit -am "Synchronise la page publique" && git -C "$PAGE_REPO" push
+```
+
+Pour vérifier que la page en ligne est à jour (aucune sortie = identique) :
+
+```bash
+sed "s#COLLEZ_ICI_L_ADRESSE_DE_L_APPLICATION_WEB#${API_URL}#" page-publique/index.html | diff - "$PAGE_REPO/index.html"
+```
+
+Avec Netlify Drop, faites le même remplacement dans une copie du dossier `page-publique`, puis
+glissez-déposez cette copie sur votre site Netlify existant (zone de dépôt de la page des déploiements)
+pour conserver la même adresse.
+
+> L’adresse `/exec` reste la même tant que vous publiez une **nouvelle version** du même déploiement.
+> Si vous créez un **nouveau déploiement**, l’adresse change : mettez à jour la page en ligne et le menu
+> **Émargement › 2**. Les QR codes ne changent pas, car ils pointent vers la page publique.
+
+**Exemple d’installation** : modèle dans `Corasec/emargement-qr-google` (privé), page
+en ligne dans `Corasec/attendance-sheet` (public), servie sur <https://corasec.github.io/attendance-sheet/>.
+
 ---
 
 ## Bon à savoir (limites)
