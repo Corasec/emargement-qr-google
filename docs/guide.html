@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Émargement par QR code — Guide d’installation et d’utilisation</title>
+<!--
+  Source du guide PDF. Pour régénérer le PDF (depuis le dossier 1-google-apps-script) :
+    google-chrome --headless --no-pdf-header-footer --print-to-pdf="Guide émargement QR - Google.pdf" docs/guide.html
+-->
+<style>
+  :root {
+    --ink: #1f2933;
+    --muted: #5f6b7a;
+    --line: #d9dee5;
+    --soft: #f3f5f8;
+    --brand: #1a5fb4;
+    --brand-soft: #e8f0fb;
+    --green: #1e7f4f;
+    --green-soft: #e6f4ec;
+    --amber: #a15c00;
+    --amber-soft: #fdf3e1;
+    --red: #b42318;
+    --red-soft: #fdecea;
+  }
+  @page {
+    size: A4;
+    margin: 18mm 17mm 20mm;
+    @bottom-left { content: "Émargement par QR code — version Google"; font: 8pt "Noto Sans", sans-serif; color: #8a94a3; }
+    @bottom-right { content: counter(page) " / " counter(pages); font: 8pt "Noto Sans", sans-serif; color: #8a94a3; }
+  }
+  @page cover { margin: 0; }
+  @page :first { margin: 0; @bottom-left { content: none; } @bottom-right { content: none; } }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; font-family: "Noto Sans", "DejaVu Sans", sans-serif; font-size: 10.5pt; line-height: 1.5; color: var(--ink); }
+  h1, h2, h3 { line-height: 1.25; margin: 0; }
+  p { margin: 0 0 8pt; }
+  b, strong { font-weight: 700; }
+  code, .mono { font-family: "Noto Sans Mono", "DejaVu Sans Mono", monospace; font-size: 9pt; background: var(--soft);
+    border: 1px solid var(--line); border-radius: 3px; padding: 0 3px; }
+  .ui { font-weight: 700; color: var(--brand); white-space: nowrap; }
+  .page-break { break-before: page; }
+  .keep { break-inside: avoid; }
+
+  /* ---------- Couverture ---------- */
+  .cover { page: cover; height: 100vh; display: flex; flex-direction: column; background: var(--brand); color: #fff;
+    padding: 30mm 22mm 28mm; position: relative; overflow: hidden; }
+  .cover .kicker { font-size: 11pt; letter-spacing: .14em; text-transform: uppercase; opacity: .8; }
+  .cover h1 { font-size: 36pt; margin: 6mm 0 4mm; font-weight: 800; }
+  .cover .sub { font-size: 16pt; opacity: .95; max-width: 120mm; }
+  .cover .art { margin-top: auto; display: flex; align-items: flex-end; gap: 14mm; }
+  .cover .for { font-size: 11pt; max-width: 85mm; opacity: .95; }
+  .cover .for b { display: block; font-size: 13pt; margin-bottom: 2mm; }
+  .cover .date { position: absolute; bottom: 14mm; left: 22mm; font-size: 9.5pt; opacity: .75; }
+
+  /* ---------- Téléphone (illustration) ---------- */
+  .phone { width: 62mm; border: 3mm solid #10213a; border-radius: 9mm; background: #fff; color: var(--ink);
+    padding: 5mm 3.5mm 4mm; box-shadow: 0 4mm 10mm rgba(0,0,0,.25); font-size: 7.5pt; line-height: 1.35; flex: none; }
+  .phone.small { width: 54mm; }
+  .phone .notch { width: 16mm; height: 1.6mm; border-radius: 1mm; background: #10213a; margin: -2.5mm auto 3mm; }
+  .phone .t { font-weight: 700; font-size: 9pt; }
+  .phone .d { color: var(--muted); font-size: 7pt; margin-bottom: 2mm; }
+  .phone .tabs { display: flex; gap: 1.5mm; margin-bottom: 2.5mm; }
+  .phone .tabs span { padding: .6mm 2mm; border-radius: 1.2mm; font-size: 6.5pt; color: var(--brand); }
+  .phone .tabs span.on { background: var(--brand); color: #fff; }
+  .phone label { display: block; font-size: 6.5pt; color: var(--muted); margin-top: 1.5mm; }
+  .phone .in { height: 4.6mm; border: 1px solid var(--line); border-radius: 1mm; font-size: 7pt; padding: .4mm 1.5mm; }
+  .phone .radio { font-size: 7pt; }
+  .phone .radio i { display: inline-block; width: 2.4mm; height: 2.4mm; border-radius: 50%; border: 1px solid #8a94a3;
+    margin-right: 1mm; vertical-align: -.3mm; }
+  .phone .radio i.on { background: var(--brand); border-color: var(--brand); box-shadow: inset 0 0 0 .5mm #fff; }
+  .phone .sig { height: 13mm; border: 1px solid var(--line); border-radius: 1mm; position: relative; }
+  .phone .btn { margin-top: 2.5mm; background: var(--brand); color: #fff; text-align: center; border-radius: 1.2mm;
+    padding: 1.3mm; font-weight: 700; }
+  .phone .center { text-align: center; padding: 6mm 0 4mm; }
+  .phone .big { font-size: 16pt; font-weight: 800; color: var(--green); }
+
+  /* ---------- Mise en page ---------- */
+  .part { break-before: page; }
+  .part-head { background: var(--brand); color: #fff; border-radius: 3mm; padding: 6mm 7mm; margin-bottom: 7mm; }
+  .part-head .n { font-size: 9.5pt; letter-spacing: .12em; text-transform: uppercase; opacity: .85; }
+  .part-head h1 { font-size: 21pt; margin: 1mm 0 1.5mm; }
+  .part-head p { margin: 0; opacity: .95; }
+  h2.section { font-size: 15pt; color: var(--brand); margin: 2mm 0 4mm; padding-bottom: 2mm; border-bottom: 2px solid var(--brand-soft); }
+
+  .step { display: grid; grid-template-columns: 12mm 1fr; column-gap: 4mm; margin-bottom: 7mm; }
+  .step .num { width: 11mm; height: 11mm; border-radius: 50%; background: var(--brand); color: #fff; font-weight: 800;
+    font-size: 14pt; display: flex; align-items: center; justify-content: center; }
+  .step h3 { font-size: 13.5pt; margin: 1.5mm 0 1mm; }
+  .step .meta { color: var(--muted); font-size: 9pt; margin-bottom: 3mm; }
+  .step ol, .step ul { margin: 0 0 3mm; padding-left: 5.5mm; }
+  .step li { margin-bottom: 1.6mm; }
+  .step li::marker { font-weight: 700; color: var(--brand); }
+
+  .box { border-radius: 2mm; padding: 3mm 4mm; margin: 3mm 0; break-inside: avoid; font-size: 10pt; }
+  .box .h { font-weight: 800; display: block; margin-bottom: .8mm; }
+  .box.ok { background: var(--green-soft); border-left: 1.2mm solid var(--green); }
+  .box.ok .h { color: var(--green); }
+  .box.warn { background: var(--amber-soft); border-left: 1.2mm solid var(--amber); }
+  .box.warn .h { color: var(--amber); }
+  .box.stop { background: var(--red-soft); border-left: 1.2mm solid var(--red); }
+  .box.stop .h { color: var(--red); }
+  .box.info { background: var(--brand-soft); border-left: 1.2mm solid var(--brand); }
+  .box.info .h { color: var(--brand); }
+  .box p:last-child, .box ul:last-child { margin-bottom: 0; }
+
+  .fig { margin: 3mm 0 4mm; break-inside: avoid; }
+  .fig .cap { font-size: 8.5pt; color: var(--muted); margin-top: 1.5mm; }
+
+  /* ---------- Fenêtres (illustrations d’écran) ---------- */
+  .win { border: 1px solid #c3cad4; border-radius: 2mm; overflow: hidden; background: #fff; font-size: 8.5pt;
+    box-shadow: 0 1mm 3mm rgba(16,33,58,.08); }
+  .win .bar { background: #eef1f5; border-bottom: 1px solid #d5dbe3; padding: 1.5mm 3mm; color: var(--muted); font-size: 8pt;
+    display: flex; align-items: center; gap: 1.2mm; }
+  .win .bar i { width: 2.2mm; height: 2.2mm; border-radius: 50%; background: #c9d0da; display: inline-block; }
+  .win .bar span { margin-left: 2mm; }
+  .win .body { padding: 3mm; }
+  .menubar { display: flex; gap: 4.5mm; padding: 1.5mm 3mm; border-bottom: 1px solid var(--line); font-size: 8.5pt; }
+  .menubar .on { background: var(--brand-soft); color: var(--brand); font-weight: 700; padding: 0 1.5mm; border-radius: 1mm; }
+  .dropdown { margin-left: 52mm; width: 92mm; border: 1px solid #c3cad4; border-radius: 1.5mm; box-shadow: 0 1.5mm 4mm rgba(0,0,0,.12);
+    background: #fff; padding: 1mm 0; font-size: 8.5pt; }
+  .dropdown div { padding: 1.1mm 3.5mm; }
+  .dropdown hr { border: 0; border-top: 1px solid var(--line); margin: 1mm 0; }
+  .dropdown .hl { background: var(--brand-soft); color: var(--brand); font-weight: 700; }
+  .hlbox { outline: .6mm solid #e8590c; outline-offset: .6mm; border-radius: 1mm; }
+  .grid-sheet { width: 100%; border-collapse: collapse; font-size: 8pt; }
+  .grid-sheet th, .grid-sheet td { border: 1px solid #dfe3e8; padding: 1mm 1.6mm; text-align: left; white-space: nowrap; }
+  .grid-sheet th { background: #ddebf7; }
+  .grid-sheet td.rn, .grid-sheet th.rn { background: #f1f3f6; color: #8a94a3; text-align: center; width: 6mm; }
+  .grid-sheet tr.sel td { background: #e8f0fb; }
+  .pill { display: inline-block; padding: 0 2mm; border-radius: 3mm; font-size: 7.5pt; font-weight: 700; }
+  .pill.draft { background: #eceff3; color: #5f6b7a; }
+  .pill.open { background: var(--green-soft); color: var(--green); }
+  .pill.closed { background: var(--red-soft); color: var(--red); }
+  .field { display: grid; grid-template-columns: 38mm 1fr; align-items: center; gap: 2mm; margin: 1.6mm 0; }
+  .field .v { border: 1px solid #c3cad4; border-radius: 1mm; padding: .8mm 2mm; }
+  .btn-ui { display: inline-block; padding: 1mm 3.5mm; border-radius: 1.2mm; font-weight: 700; font-size: 8pt; border: 1px solid var(--brand); color: var(--brand); background: #fff; }
+  .btn-ui.p { background: var(--brand); color: #fff; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; align-items: start; }
+  .codebox { font-family: "Noto Sans Mono", monospace; font-size: 8pt; background: #10213a; color: #e5ecf5; border-radius: 1.5mm;
+    padding: 2.5mm 3mm; white-space: pre-wrap; word-break: break-all; }
+  .codebox .bad { color: #ff9c8f; } .codebox .good { color: #8ee0a8; } .codebox .c { color: #8a9bb3; }
+
+  /* ---------- Tableaux ---------- */
+  table.t { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin: 2mm 0 4mm; }
+  table.t th { background: var(--brand-soft); color: var(--brand); text-align: left; padding: 2mm 2.5mm; }
+  table.t td { border-bottom: 1px solid var(--line); padding: 2mm 2.5mm; vertical-align: top; }
+  table.t tr { break-inside: avoid; }
+  table.t td:first-child { font-weight: 700; width: 38%; }
+
+  /* ---------- Page « En bref » ---------- */
+  .flow { display: grid; grid-template-columns: 1fr 7mm 1fr 7mm 1fr; align-items: stretch; margin: 3mm 0 6mm; }
+  .flow .c { background: var(--soft); border-radius: 2.5mm; padding: 4mm; text-align: center; }
+  .flow .c .ic { width: 12mm; height: 12mm; margin: 0 auto 2mm; border-radius: 50%; background: var(--brand); color: #fff;
+    font-weight: 800; font-size: 14pt; display: flex; align-items: center; justify-content: center; }
+  .flow .c b { display: block; margin-bottom: 1mm; }
+  .flow .c span { font-size: 9pt; color: var(--muted); }
+  .flow .a { display: flex; align-items: center; justify-content: center; color: var(--brand); font-size: 16pt; font-weight: 800; }
+  .checks { list-style: none; padding: 0; margin: 0; columns: 2; column-gap: 8mm; }
+  .checks li { break-inside: avoid; padding-left: 6mm; position: relative; margin-bottom: 2mm; font-size: 10pt; }
+  .checks li::before { content: ""; position: absolute; left: 0; top: 1.4mm; width: 3.2mm; height: 1.7mm;
+    border-left: .6mm solid var(--green); border-bottom: .6mm solid var(--green); transform: rotate(-45deg); }
+  .need { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; }
+  .need div { border: 1px solid var(--line); border-radius: 2mm; padding: 3mm; font-size: 9.5pt; }
+  .need div b { display: block; color: var(--brand); }
+  .toc { margin: 0; padding: 0; list-style: none; }
+  .toc li { display: flex; gap: 3mm; padding: 1.6mm 0; border-bottom: 1px dotted var(--line); }
+  .toc li b { color: var(--brand); width: 18mm; flex: none; }
+  .toc li span { color: var(--muted); margin-left: auto; font-size: 9pt; }
+
+  /* ---------- Fiche mémo ---------- */
+  .memo { border: .6mm solid var(--brand); border-radius: 3mm; padding: 6mm 7mm; }
+  .memo h2 { font-size: 17pt; color: var(--brand); margin-bottom: 1mm; }
+  .memo .when { font-weight: 800; text-transform: uppercase; letter-spacing: .08em; font-size: 9pt; color: var(--muted);
+    margin: 5mm 0 2mm; }
+  .tick { list-style: none; padding: 0; margin: 0; }
+  .tick li { padding-left: 8mm; position: relative; margin-bottom: 2.2mm; }
+  .tick li::before { content: ""; position: absolute; left: 0; top: .6mm; width: 4mm; height: 4mm; border: .4mm solid var(--brand); border-radius: .8mm; }
+</style>
+</head>
+<body>
+
+<!-- =============================== COUVERTURE =============================== -->
+<section class="cover">
+  <div class="kicker">Guide pas à pas</div>
+  <h1>Émargement<br>par QR code</h1>
+  <div class="sub">Installer et utiliser la liste de présence en ligne, avec signature au doigt — version Google</div>
+  <div class="art">
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="t">Atelier de restitution</div>
+      <div class="d">12 novembre 2026</div>
+      <div class="tabs"><span class="on">Émarger</span><span>Ai-je émargé ?</span><span>Participants</span></div>
+      <label>Nom et prénoms</label><div class="in">Awa Koné</div>
+      <label>Genre</label><div class="radio"><i class="on"></i>Femme &nbsp; <i></i>Homme</div>
+      <label>Structure représentée</label><div class="in">Mairie de Bohicon</div>
+      <label>Signature</label>
+      <div class="sig"><svg viewBox="0 0 200 50" width="100%" height="100%"><path d="M12 36 C 25 8, 38 8, 36 30 S 52 44, 62 22 S 80 10, 84 30 C 88 44, 100 20, 112 26 S 140 40, 150 18 L 186 30" fill="none" stroke="#10213a" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+      <div class="btn">Signer la liste</div>
+    </div>
+    <div class="for">
+      <b>Pour qui ?</b>
+      Pour les personnes qui organisent des ateliers, formations ou réunions et veulent remplacer la feuille
+      de présence papier. Aucune compétence en informatique n’est nécessaire.
+    </div>
+  </div>
+  <div class="date">Novembre 2026</div>
+</section>
+
+<!-- =============================== EN BREF =============================== -->
+<section>
+  <h2 class="section">Comment ça marche ?</h2>
+  <div class="flow">
+    <div class="c"><div class="ic">1</div><b>Le participant scanne</b><span>le QR code de l’affiche avec son téléphone. Pas d’application ni de compte à créer.</span></div>
+    <div class="a">›</div>
+    <div class="c"><div class="ic">2</div><b>Il remplit et signe</b><span>nom, genre, structure, fonction, provenance, contact, puis signature au doigt.</span></div>
+    <div class="a">›</div>
+    <div class="c"><div class="ic">3</div><b>Vous recevez tout</b><span>en direct dans votre Google Sheet. À la fin : feuille PDF signée et fichier Excel.</span></div>
+  </div>
+
+  <h2 class="section">Ce que vous obtenez</h2>
+  <ul class="checks">
+    <li>Un QR code et une affiche A4 prête à imprimer</li>
+    <li>Un formulaire simple, utilisable sur n’importe quel téléphone</li>
+    <li>La signature manuscrite, faite au doigt</li>
+    <li>Un seul émargement par personne et par jour</li>
+    <li>Un numéro d’ordre par jour (1, 2, 3…)</li>
+    <li>Une page « Ai-je émargé ? » pour les participants</li>
+    <li>La feuille d’émargement PDF avec les signatures et les totaux femmes / hommes</li>
+    <li>Un export Excel pour trier et analyser les données</li>
+    <li>Des données qui restent dans le Google Drive de votre structure</li>
+    <li>Gratuit</li>
+  </ul>
+
+  <h2 class="section" style="margin-top:6mm">Ce qu’il vous faut</h2>
+  <div class="need">
+    <div><b>Un compte Google de la structure</b>par exemple <code>emargement@ma-structure.org</code> ou un Gmail créé pour l’occasion. Évitez un compte personnel : toutes les données lui appartiendront.</div>
+    <div><b>Un ordinateur</b>avec Chrome, Edge ou Firefox, pour l’installation et la préparation des évènements. Le téléphone ne sert qu’aux participants.</div>
+    <div><b>Les fichiers fournis</b><code>Code.gs</code>, <code>Signer.html</code>, <code>Affiche.html</code> et le dossier <code>page-publique</code>. Ouvrez-les avec le Bloc-notes pour copier leur contenu.</div>
+    <div><b>Environ 30 minutes</b>une seule fois, pour l’installation. Ensuite, préparer un évènement prend 2 minutes.</div>
+  </div>
+
+  <h2 class="section" style="margin-top:6mm">Sommaire</h2>
+  <ul class="toc">
+    <li><b>Partie 1</b>Installation — étapes 1 à 5<span>une seule fois</span></li>
+    <li><b>Partie 2</b>Utilisation — créer, ouvrir, afficher, récupérer les données, clore<span>à chaque évènement</span></li>
+    <li><b>Partie 3</b>Bon à savoir et résolution des problèmes<span>en cas de besoin</span></li>
+    <li><b>Mémo</b>Fiche récapitulative d’un évènement<span>à imprimer</span></li>
+  </ul>
+  <p style="font-size:8.5pt;color:var(--muted);margin-top:4mm">Les écrans de ce guide sont des illustrations simplifiées : l’apparence exacte des pages Google peut varier légèrement.</p>
+</section>
+
+<!-- =============================== PARTIE 1 =============================== -->
+<section class="part">
+  <div class="part-head">
+    <div class="n">Partie 1</div>
+    <h1>Installation</h1>
+    <p>À faire <b>une seule fois</b>, sur un ordinateur, avec le compte Google de la structure. Comptez 30 minutes.</p>
+  </div>
+
+  <div class="step">
+    <div class="num">1</div>
+    <div>
+      <h3>Créer la feuille Google</h3>
+      <div class="meta">2 minutes</div>
+      <ol>
+        <li>Allez sur <b>sheets.google.com</b> et connectez-vous avec le compte de la structure.</li>
+        <li>Cliquez sur <span class="ui">Feuille de calcul vierge</span>.</li>
+        <li>En haut à gauche, cliquez sur « Feuille de calcul sans titre » et nommez-la, par exemple
+          <b>Émargement — Ma structure</b>.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="num">2</div>
+    <div>
+      <h3>Coller le script</h3>
+      <div class="meta">10 minutes</div>
+      <ol>
+        <li>Dans la feuille, ouvrez le menu <span class="ui">Extensions › Apps Script</span>. Un nouvel onglet s’ouvre.</li>
+        <li>Un fichier <b>Code.gs</b> est déjà ouvert. Effacez tout son contenu, puis collez <b>tout</b> le contenu
+          du fichier fourni <code>Code.gs</code>.</li>
+        <li>À gauche, cliquez sur <span class="ui">＋</span> à côté de « Fichiers », puis sur <span class="ui">HTML</span>.
+          Nommez le fichier exactement <b>Signer</b> (sans « .html »). Effacez son contenu et collez celui de
+          <code>Signer.html</code>.</li>
+        <li>Recommencez avec un fichier HTML nommé exactement <b>Affiche</b>, et collez-y le contenu de <code>Affiche.html</code>.</li>
+        <li>Cliquez sur l’icône <span class="ui">Enregistrer</span> (la disquette).</li>
+        <li>Réglez le fuseau horaire : roue dentée <span class="ui">Paramètres du projet</span> › <b>Fuseau horaire</b>.
+          Choisissez celui du lieu des évènements, par exemple « (GMT+01:00) Porto-Novo ».</li>
+      </ol>
+      <div class="fig">
+        <div class="win">
+          <div class="bar"><i></i><i></i><i></i><span>Apps Script — Émargement</span></div>
+          <div class="body" style="display:grid;grid-template-columns:42mm 1fr;gap:3mm">
+            <div style="border-right:1px solid var(--line);padding-right:3mm">
+              <div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:1.5mm">Fichiers <span class="hlbox" style="padding:0 1.2mm">＋</span></div>
+              <div style="background:var(--brand-soft);padding:.6mm 1.5mm;border-radius:1mm">Code.gs</div>
+              <div style="padding:.6mm 1.5mm">Signer.html</div>
+              <div style="padding:.6mm 1.5mm">Affiche.html</div>
+            </div>
+            <div class="mono" style="background:none;border:0;font-size:7.5pt;color:var(--muted);line-height:1.6">
+              /**<br>&nbsp;* Émargement par QR code avec signature manuscrite…<br>&nbsp;*/<br><br>var SHEET_EVENTS = 'Évènements';<br>…
+            </div>
+          </div>
+        </div>
+        <div class="cap">Vous devez obtenir trois fichiers : Code.gs, Signer.html et Affiche.html.</div>
+      </div>
+      <div class="box warn"><span class="h">Attention aux noms</span>Les fichiers doivent s’appeler exactement
+        <b>Signer</b> et <b>Affiche</b>, avec une majuscule et sans accent ni espace. Sinon, la page ne s’affichera pas.</div>
+      <div class="box info"><span class="h">Pourquoi le fuseau horaire ?</span>C’est lui qui décide du « jour » de
+        l’émargement. Avec un mauvais fuseau, la liste peut s’ouvrir ou se fermer avec une heure de décalage.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="num">3</div>
+    <div>
+      <h3>Installer</h3>
+      <div class="meta">3 minutes</div>
+      <ol>
+        <li>Revenez à l’onglet de la feuille et <b>rechargez la page</b> (touche F5). Après quelques secondes, un menu
+          <span class="ui">Émargement</span> apparaît à droite de « Aide ».</li>
+        <li>Cliquez sur <span class="ui">Émargement › 1. Installer (une seule fois)</span>.</li>
+        <li>Google demande une autorisation. C’est normal : le script doit pouvoir écrire dans la feuille et dans votre Drive.
+          <ul>
+            <li>Choisissez le compte de la structure.</li>
+            <li>Si l’écran « Google n’a pas validé cette application » apparaît, cliquez sur <span class="ui">Paramètres avancés</span>,
+              puis sur <span class="ui">Accéder à … (non sécurisé)</span>.</li>
+            <li>Cliquez sur <span class="ui">Autoriser</span>.</li>
+          </ul>
+        </li>
+        <li>Si l’installation s’est arrêtée à l’autorisation, relancez <span class="ui">Émargement › 1. Installer</span>.</li>
+      </ol>
+      <div class="two">
+        <div class="fig">
+          <div class="win">
+            <div class="menubar"><span>Fichier</span><span>Édition</span><span>Affichage</span><span>Insertion</span><span>Format</span><span>Aide</span><span class="on">Émargement</span></div>
+            <div style="padding:1mm 0 3mm;position:relative">
+              <div class="dropdown" style="margin-left:22mm;width:62mm;font-size:7.5pt">
+                <div class="hl">1. Installer (une seule fois)</div>
+                <div>2. Enregistrer l’adresse de l’application web</div>
+                <div>3. Enregistrer l’adresse de la page publique</div>
+                <hr>
+                <div>Nouvel évènement…</div>
+                <div>QR code et affiche</div>
+                <div>Feuille d’émargement PDF</div>
+                <div>Export Excel, sans signatures</div>
+              </div>
+            </div>
+          </div>
+          <div class="cap">Le menu Émargement dans la feuille.</div>
+        </div>
+        <div class="fig">
+          <div class="win">
+            <div class="bar"><i></i><i></i><i></i><span>accounts.google.com</span></div>
+            <div class="body">
+              <div style="font-weight:700;font-size:10pt;margin-bottom:1.5mm">Google n’a pas validé cette application</div>
+              <div style="color:var(--muted);font-size:7.5pt;margin-bottom:3mm">L’application demande l’accès à des informations sensibles…</div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span class="hlbox" style="color:var(--brand);font-size:7.5pt;padding:0 1mm">Paramètres avancés</span>
+                <span class="btn-ui p">Retour à la sécurité</span>
+              </div>
+              <div style="margin-top:3mm;font-size:7.5pt;color:var(--brand);text-decoration:underline">Accéder à Émargement (non sécurisé)</div>
+            </div>
+          </div>
+          <div class="cap">Cliquez sur « Paramètres avancés », puis sur le lien qui apparaît.</div>
+        </div>
+      </div>
+      <div class="box info"><span class="h">Est-ce dangereux ?</span>Non. Ce message apparaît pour tout script qui n’a pas été
+        vérifié par Google. Le script est le vôtre, il tourne dans votre compte et n’envoie aucune donnée ailleurs.</div>
+      <div class="box ok"><span class="h">Vérifiez</span>La feuille contient maintenant deux onglets, <b>Évènements</b> et
+        <b>Émargements</b>. Votre Google Drive contient trois nouveaux dossiers : « Émargement — signatures »,
+        « Émargement — feuilles PDF » et « Émargement — exports Excel ».</div>
+    </div>
+  </div>
+
+  <div class="step page-break">
+    <div class="num">4</div>
+    <div>
+      <h3>Publier l’application web</h3>
+      <div class="meta">5 minutes</div>
+      <ol>
+        <li>Dans l’onglet Apps Script, cliquez sur le bouton bleu <span class="ui">Déployer › Nouveau déploiement</span>.</li>
+        <li>Cliquez sur la roue dentée à côté de « Sélectionner le type », puis sur <span class="ui">Application Web</span>.</li>
+        <li>Remplissez les trois champs comme sur l’illustration ci-dessous.</li>
+        <li>Cliquez sur <span class="ui">Déployer</span>. Copiez l’adresse <b>Application Web</b> : elle commence par
+          <code>https://script.google.com/macros/s/</code> et se termine par <code>/exec</code>.</li>
+        <li>Revenez à la feuille : <span class="ui">Émargement › 2. Enregistrer l’adresse de l’application web</span>,
+          collez l’adresse, puis cliquez sur OK.</li>
+      </ol>
+      <div class="fig">
+        <div class="win">
+          <div class="bar"><i></i><i></i><i></i><span>Nouveau déploiement</span></div>
+          <div class="body">
+            <div class="field"><span>Type</span><span class="v">Application Web</span></div>
+            <div class="field"><span>Description</span><span class="v">Émargement</span></div>
+            <div class="field"><span>Exécuter en tant que</span><span class="v hlbox">Moi (emargement@ma-structure.org)</span></div>
+            <div class="field"><span>Qui a accès</span><span class="v hlbox">Tout le monde</span></div>
+            <div style="text-align:right;margin-top:2.5mm"><span class="btn-ui">Annuler</span> <span class="btn-ui p">Déployer</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="box stop"><span class="h">Indispensable : « Tout le monde »</span>Les participants n’ont pas de compte
+        Google. Choisissez bien <b>Tout le monde</b>, et non « Tout utilisateur disposant d’un compte Google ».</div>
+      <div class="box warn"><span class="h">Gardez cette adresse</span>Notez l’adresse <code>/exec</code> quelque part :
+        vous en aurez besoin à l’étape suivante. Ne prenez pas l’adresse de test, qui se termine par <code>/dev</code>.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="num">5</div>
+    <div>
+      <h3>Mettre en ligne la page publique</h3>
+      <div class="meta">10 minutes — fortement recommandé</div>
+      <div class="box info"><span class="h">Pourquoi cette étape ?</span>Sur un téléphone connecté à <b>plusieurs comptes
+        Google</b> (très fréquent sur Android), la page servie directement par Google affiche « Impossible d’ouvrir le fichier
+        pour le moment ». La page publique, hébergée ailleurs, contourne ce problème. Vos données restent dans votre feuille
+        et votre Drive.</div>
+      <p style="margin-top:3mm"><b>a. Renseigner l’adresse dans la page</b></p>
+      <ol>
+        <li>Ouvrez le fichier <code>page-publique/index.html</code> avec le Bloc-notes
+          (clic droit › <b>Ouvrir avec</b> › <b>Bloc-notes</b>).</li>
+        <li>Cherchez le texte <code>COLLEZ_ICI_L_ADRESSE_DE_L_APPLICATION_WEB</code> (touches <b>Ctrl + F</b>).</li>
+        <li>Remplacez-le par votre adresse <code>/exec</code>, <b>en gardant les apostrophes</b> autour. Enregistrez (<b>Ctrl + S</b>).</li>
+      </ol>
+      <div class="fig">
+        <div class="codebox"><span class="c">Avant :</span>
+var API = '<span class="bad">COLLEZ_ICI_L_ADRESSE_DE_L_APPLICATION_WEB</span>';
+
+<span class="c">Après :</span>
+var API = '<span class="good">https://script.google.com/macros/s/AKfycbx…/exec</span>';</div>
+      </div>
+      <p><b>b. Mettre la page en ligne (gratuit)</b></p>
+      <ol>
+        <li>Allez sur <b>app.netlify.com/drop</b> et créez un compte gratuit (vous pouvez utiliser le compte Google de la structure).</li>
+        <li>Glissez-déposez le <b>dossier</b> <code>page-publique</code> entier dans le cadre de la page.</li>
+        <li>Après quelques secondes, Netlify affiche l’adresse de votre page, du type <code>https://nom-au-hasard.netlify.app</code>.
+          Vous pouvez la rendre plus lisible dans <span class="ui">Site configuration › Change site name</span>.</li>
+      </ol>
+      <div class="fig">
+        <div class="win">
+          <div class="bar"><i></i><i></i><i></i><span>app.netlify.com/drop</span></div>
+          <div class="body" style="text-align:center;padding:5mm">
+            <div style="border:.5mm dashed #9aa5b4;border-radius:2mm;padding:6mm;color:var(--muted)">
+              <b style="color:var(--ink)">Glissez-déposez ici le dossier de votre site</b><br>
+              <span style="font-size:7.5pt">page-publique</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p><b>c. Enregistrer l’adresse dans la feuille</b></p>
+      <ol>
+        <li>Dans la feuille : <span class="ui">Émargement › 3. Enregistrer l’adresse de la page publique</span>.</li>
+        <li>Collez l’adresse donnée par Netlify, puis cliquez sur OK.</li>
+      </ol>
+      <div class="box ok"><span class="h">C’est fini !</span>L’installation est terminée. Les QR codes que vous générerez
+        pointeront désormais vers la page publique.</div>
+      <div class="box info"><span class="h">Pour les profils techniques</span>GitHub Pages ou tout autre hébergeur de pages statiques
+        convient aussi. La page ne contient aucune donnée, seulement l’adresse de l’application web.</div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================== PARTIE 2 =============================== -->
+<section class="part">
+  <div class="part-head">
+    <div class="n">Partie 2</div>
+    <h1>Utilisation</h1>
+    <p>À faire <b>pour chaque évènement</b>. Toutes les actions se font depuis la feuille Google, avec le menu Émargement.</p>
+  </div>
+
+  <h2 class="section">Avant l’évènement</h2>
+
+  <div class="step">
+    <div class="num">A</div>
+    <div>
+      <h3>Créer l’évènement</h3>
+      <ol>
+        <li>Menu <span class="ui">Émargement › Nouvel évènement…</span></li>
+        <li>Indiquez le <b>titre</b>, puis le <b>premier jour</b> et le <b>dernier jour</b> au format JJ/MM/AAAA
+          (le même jour deux fois pour un évènement d’une journée).</li>
+      </ol>
+      <p>L’évènement apparaît dans l’onglet <b>Évènements</b>, avec le statut <span class="pill draft">Brouillon</span> : personne
+        ne peut encore signer.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="num">B</div>
+    <div>
+      <h3>Ouvrir la liste</h3>
+      <ol>
+        <li>Dans l’onglet <b>Évènements</b>, cliquez sur la case <b>Statut</b> de l’évènement.</li>
+        <li>Choisissez <span class="pill open">Ouvert</span> dans la liste.</li>
+      </ol>
+      <div class="fig">
+        <div class="win">
+          <div class="bar"><i></i><i></i><i></i><span>Onglet « Évènements »</span></div>
+          <table class="grid-sheet">
+            <tr><th class="rn"></th><th>Titre</th><th>Premier jour</th><th>Dernier jour</th><th>Statut</th><th>Jeton (ne pas modifier)</th></tr>
+            <tr><td class="rn">2</td><td>Formation des animateurs</td><td>03/10/2026</td><td>04/10/2026</td><td><span class="pill closed">Clos</span></td><td style="color:#8a94a3">5c1e0a…</td></tr>
+            <tr class="sel"><td class="rn">3</td><td>Atelier de restitution</td><td>12/11/2026</td><td>13/11/2026</td><td><span class="pill open hlbox">Ouvert ▾</span></td><td style="color:#8a94a3">bbfe7d…</td></tr>
+            <tr><td class="rn">4</td><td>Réunion de lancement</td><td>02/12/2026</td><td>02/12/2026</td><td><span class="pill draft">Brouillon</span></td><td style="color:#8a94a3">93a2f4…</td></tr>
+          </table>
+        </div>
+      </div>
+      <table class="t">
+        <tr><th>Statut</th><th>Ce que voient les participants</th></tr>
+        <tr><td><span class="pill draft">Brouillon</span></td><td>« Cette page n’existe pas. » L’évènement est invisible.</td></tr>
+        <tr><td><span class="pill open">Ouvert</span></td><td>Le formulaire, mais <b>seulement les jours de l’évènement</b>. Avant ou après, un message indique les dates.</td></tr>
+        <tr><td><span class="pill closed">Clos</span></td><td>« La liste de présence de cet évènement est close. »</td></tr>
+      </table>
+      <div class="box stop"><span class="h">Ne touchez pas à la colonne « Jeton »</span>C’est l’identifiant de l’évènement
+        dans l’adresse du QR code. Si vous le modifiez, les QR codes imprimés ne fonctionneront plus.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="num">C</div>
+    <div>
+      <h3>Imprimer l’affiche et le QR code</h3>
+      <ol>
+        <li>Dans l’onglet <b>Évènements</b>, cliquez sur <b>n’importe quelle case de la ligne</b> de l’évènement.</li>
+        <li>Menu <span class="ui">Émargement › QR code et affiche</span>. Une fenêtre s’ouvre avec trois boutons :</li>
+      </ol>
+      <div class="two">
+        <div class="fig">
+          <div class="win">
+            <div class="bar"><i></i><i></i><i></i><span>QR code — Atelier de restitution</span></div>
+            <div class="body" style="text-align:center">
+              <div style="width:26mm;height:26mm;margin:1mm auto 2mm;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:#8a94a3;font-size:7pt;background:var(--soft)">QR code</div>
+              <div style="font-size:6.5pt;color:var(--muted);margin-bottom:2mm">https://emargement-ma-structure.netlify.app/?e=bbfe7d…</div>
+              <div><span class="btn-ui p">Ouvrir l’affiche à imprimer</span></div>
+              <div style="margin-top:1.5mm"><span class="btn-ui">Tester la page</span> <span class="btn-ui">Télécharger le QR (PNG)</span></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <table class="t" style="margin-top:3mm">
+            <tr><td>Ouvrir l’affiche</td><td>Affiche A4 avec le titre, les dates et un grand QR code. Imprimez-la, ou enregistrez-la en PDF.</td></tr>
+            <tr><td>Tester la page</td><td>Ouvre le formulaire, comme le verra un participant.</td></tr>
+            <tr><td>Télécharger le QR</td><td>Image à mettre sur un écran, une présentation ou un message WhatsApp.</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="box ok"><span class="h">Conseil</span>Testez toujours avec <b>votre propre téléphone</b> la veille : scannez
+        l’affiche et vérifiez que le formulaire s’ouvre. La signature n’est possible que les jours de l’évènement.</div>
+    </div>
+  </div>
+
+  <h2 class="section">Pendant l’évènement</h2>
+  <div class="step">
+    <div class="num">D</div>
+    <div>
+      <h3>Les participants émargent</h3>
+      <p>Affichez le QR code à l’accueil, et si possible à plusieurs endroits. Chaque participant :</p>
+      <ol>
+        <li>scanne le QR code avec l’appareil photo de son téléphone ;</li>
+        <li>remplit le formulaire et signe au doigt dans le cadre ;</li>
+        <li>appuie sur <b>Signer la liste</b> et reçoit son numéro d’ordre du jour.</li>
+      </ol>
+      <div style="display:flex;gap:8mm;justify-content:center;margin:4mm 0">
+        <div class="phone small">
+          <div class="notch"></div>
+          <div class="t">Atelier de restitution</div>
+          <div class="d">12 – 13 novembre 2026</div>
+          <div class="tabs"><span class="on">Émarger</span><span>Ai-je émargé ?</span><span>Participants</span></div>
+          <label>Nom et prénoms</label><div class="in">Koffi Mensah</div>
+          <label>Structure représentée</label><div class="in">ONG Lumière</div>
+          <label>E-mail ou téléphone</label><div class="in">+229 97 00 00 00</div>
+          <label>Signature</label>
+          <div class="sig"><svg viewBox="0 0 200 50" width="100%" height="100%"><path d="M14 30 C 30 6, 44 44, 58 24 S 76 8, 90 28 S 118 40, 128 20 C 136 8, 150 36, 182 22" fill="none" stroke="#10213a" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+          <div class="btn">Signer la liste</div>
+        </div>
+        <div class="phone small">
+          <div class="notch"></div>
+          <div class="t">Atelier de restitution</div>
+          <div class="d">12 – 13 novembre 2026</div>
+          <div class="center">
+            <div class="big">✓</div>
+            <div style="font-weight:700;font-size:9pt;margin-top:2mm">Merci, vous avez émargé.</div>
+            <div style="font-size:12pt;font-weight:800;margin-top:2mm">N° 17</div>
+            <div class="d">12 novembre 2026</div>
+          </div>
+        </div>
+      </div>
+      <div class="box info"><span class="h">Bon à savoir</span>
+        <ul style="margin:0;padding-left:5mm">
+          <li>Chaque signature arrive <b>en direct</b> dans l’onglet <b>Émargements</b> de la feuille.</li>
+          <li>Une personne qui signe deux fois le même jour (même e-mail ou même téléphone) n’est comptée qu’une fois :
+            la page lui rappelle son numéro.</li>
+          <li>L’onglet <b>Participants</b> de la page montre la liste publique : numéro, nom abrégé et structure.
+            Les e-mails, téléphones et signatures ne sont jamais visibles du public.</li>
+          <li>Pour un évènement de plusieurs jours, chacun signe <b>une fois par jour</b>.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="section">Après l’évènement</h2>
+  <div class="step">
+    <div class="num">E</div>
+    <div>
+      <h3>Générer la feuille d’émargement PDF</h3>
+      <ol>
+        <li>Dans l’onglet <b>Évènements</b>, cliquez sur la ligne de l’évènement.</li>
+        <li>Menu <span class="ui">Émargement › Feuille d’émargement PDF</span>.</li>
+        <li>Indiquez un jour (JJ/MM/AAAA), ou laissez vide pour tous les jours, puis OK.</li>
+        <li>Patientez : une fenêtre affiche un lien <b>Ouvrir le PDF</b>.</li>
+      </ol>
+      <p>Le PDF contient une page par jour, avec toutes les informations, les signatures et les totaux femmes / hommes.
+        Il est enregistré dans le dossier « Émargement — feuilles PDF » de votre Drive.</p>
+      <div class="box warn"><span class="h">Beaucoup de participants ?</span>Au-delà d’environ 300 signatures, générez le PDF
+        <b>jour par jour</b> : Google limite chaque traitement à 6 minutes.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="num">F</div>
+    <div>
+      <h3>Exporter les données en Excel</h3>
+      <ol>
+        <li>Dans l’onglet <b>Évènements</b>, cliquez sur la ligne de l’évènement.</li>
+        <li>Menu <span class="ui">Émargement › Export Excel, sans signatures</span>.</li>
+        <li>Indiquez un jour, ou laissez vide pour tous les jours, puis OK.</li>
+        <li>Une fenêtre affiche un lien <b>Ouvrir le fichier</b>. Dans Google Drive, faites <span class="ui">Fichier › Télécharger</span>
+          pour l’ouvrir dans Excel.</li>
+      </ol>
+      <table class="t">
+        <tr><th>Onglet du fichier</th><th>Contenu</th></tr>
+        <tr><td>Participants</td><td>Une ligne par émargement : jour, n°, nom, genre, structure, fonction, pays, ville, e-mail,
+          téléphone, heure. Idéal pour trier, filtrer ou faire des tableaux croisés.</td></tr>
+        <tr><td>Totaux</td><td>Par jour : nombre total, femmes, hommes, non précisé.</td></tr>
+      </table>
+      <div class="box info"><span class="h">Première utilisation</span>Google demande une <b>nouvelle autorisation</b>
+        (pour convertir le fichier en Excel). Acceptez-la comme à l’étape 3 de l’installation.</div>
+      <div class="box warn"><span class="h">Données personnelles</span>Le fichier contient les e-mails et téléphones des participants.
+        Ne le partagez qu’avec les personnes qui en ont besoin.</div>
+    </div>
+  </div>
+
+  <div class="step keep">
+    <div class="num">G</div>
+    <div>
+      <h3>Clore la liste</h3>
+      <p>Dans l’onglet <b>Évènements</b>, passez le statut à <span class="pill closed">Clos</span>. La page affiche alors
+        « La liste de présence de cet évènement est close ». Les données restent dans la feuille, et vous pouvez toujours
+        générer le PDF et l’export Excel.</p>
+    </div>
+  </div>
+</section>
+
+<!-- =============================== PARTIE 3 =============================== -->
+<section class="part">
+  <div class="part-head">
+    <div class="n">Partie 3</div>
+    <h1>Bon à savoir et problèmes</h1>
+    <p>Les limites à connaître, et que faire si quelque chose ne marche pas.</p>
+  </div>
+
+  <h2 class="section">En cas de problème</h2>
+  <table class="t">
+    <tr><th>Ce que vous voyez</th><th>Que faire</th></tr>
+    <tr><td>Pas de menu « Émargement » dans la feuille</td><td>Rechargez la feuille (F5) et attendez 10 secondes. Vérifiez que le script est bien enregistré dans Apps Script.</td></tr>
+    <tr><td>Sur téléphone : « Impossible d’ouvrir le fichier pour le moment »</td><td>Le téléphone est connecté à plusieurs comptes Google. Faites l’étape 5 de l’installation (page publique), puis réimprimez le QR code. En attendant, ouvrir le lien en <b>navigation privée</b> fonctionne.</td></tr>
+    <tr><td>« Cette page n’existe pas » en scannant</td><td>L’évènement est en Brouillon, ou la colonne Jeton a été modifiée.</td></tr>
+    <tr><td>« La liste ne peut être signée que les jours de l’évènement »</td><td>Le statut n’est pas « Ouvert », la date du jour est hors de l’évènement, ou le fuseau horaire est mauvais (étape 2).</td></tr>
+    <tr><td>La page publique affiche « La connexion a échoué »</td><td>Vérifiez l’adresse dans <code>index.html</code> (étape 5a), puis vérifiez que « Qui a accès » est bien « Tout le monde » (étape 4). Si vous venez de modifier le script, publiez une nouvelle version (voir ci-dessous).</td></tr>
+    <tr><td>La page publique affiche « Page mal configurée »</td><td>L’adresse n’a pas été remplacée dans <code>index.html</code>, ou elle ne se termine pas par <code>/exec</code>.</td></tr>
+    <tr><td>Une page Google « accès refusé »</td><td>À l’étape 4, « Qui a accès » n’est pas « Tout le monde ». Corrigez-le dans <span class="ui">Déployer › Gérer les déploiements</span>.</td></tr>
+    <tr><td>« (signature introuvable) » dans le PDF</td><td>L’image de la signature a été supprimée ou déplacée du dossier « Émargement — signatures ».</td></tr>
+    <tr><td>« Beaucoup de personnes signent en ce moment »</td><td>Normal lors d’un pic d’affluence : le participant patiente quelques secondes et appuie de nouveau sur « Signer ».</td></tr>
+  </table>
+
+  <h2 class="section" style="margin-top:6mm">Bon à savoir</h2>
+  <table class="t">
+    <tr><td>Affluence</td><td>Les signatures sont enregistrées une par une (1 à 2 secondes chacune) pour garantir des numéros sans doublon. Lors d’un pic, certains attendront quelques secondes. Affichez le QR code à plusieurs endroits et invitez les participants à signer dès leur arrivée.</td></tr>
+    <tr><td>Réseau</td><td>Le téléphone doit avoir Internet au moment de signer (données mobiles ou Wi-Fi).</td></tr>
+    <tr><td>Bandeau Google</td><td>Si vous n’avez pas fait l’étape 5, la page affiche en haut « Cette application a été créée par un utilisateur de Google Apps Script ». C’est normal et sans danger.</td></tr>
+    <tr><td>Compte professionnel (Google Workspace)</td><td>Si l’option « Tout le monde » n’apparaît pas à l’étape 4, l’administrateur l’a bloquée. Demandez-lui de l’autoriser, ou utilisez un compte Gmail dédié.</td></tr>
+    <tr><td>Confidentialité</td><td>Partagez la feuille et les dossiers Drive uniquement avec l’équipe. Supprimez les données quand elles ne sont plus nécessaires, selon votre politique et la loi applicable.</td></tr>
+    <tr><td>Copie sur SharePoint ou un serveur</td><td>Après l’évènement, téléchargez le PDF et l’export Excel, puis déposez-les où vous le souhaitez.</td></tr>
+  </table>
+
+  <h2 class="section" style="margin-top:6mm">Si vous recevez une nouvelle version du script</h2>
+  <div class="keep">
+    <ol>
+      <li>Dans Apps Script, remplacez le contenu des fichiers concernés, puis enregistrez.</li>
+      <li>Cliquez sur <span class="ui">Déployer › Gérer les déploiements</span>, puis sur le crayon ✎.</li>
+      <li>Dans <b>Version</b>, choisissez <span class="ui">Nouvelle version</span>, puis cliquez sur <span class="ui">Déployer</span>.</li>
+      <li>Rechargez la feuille (F5) pour voir les nouveaux menus.</li>
+    </ol>
+    <div class="box ok"><span class="h">Rassurez-vous</span>L’adresse de l’application ne change pas : les QR codes déjà imprimés
+      continuent de fonctionner, et la page publique n’a pas besoin d’être modifiée.</div>
+  </div>
+</section>
+
+<!-- =============================== MÉMO =============================== -->
+<section class="page-break">
+  <div class="memo">
+    <h2>Mémo — un évènement, de A à Z</h2>
+    <p style="color:var(--muted)">À imprimer et garder près de l’ordinateur. Toutes les actions passent par le menu <b>Émargement</b> de la feuille.</p>
+
+    <div class="when">Quelques jours avant</div>
+    <ul class="tick">
+      <li><b>Nouvel évènement…</b> : titre, premier jour, dernier jour (JJ/MM/AAAA).</li>
+      <li>Onglet Évènements : passer le <b>Statut</b> à <span class="pill open">Ouvert</span>.</li>
+      <li>Cliquer sur la ligne de l’évènement, puis <b>QR code et affiche</b> › <b>Ouvrir l’affiche à imprimer</b>.</li>
+      <li>Imprimer l’affiche, en plusieurs exemplaires si possible.</li>
+      <li>Scanner l’affiche avec son propre téléphone pour vérifier que la page s’ouvre.</li>
+    </ul>
+
+    <div class="when">Le jour J</div>
+    <ul class="tick">
+      <li>Afficher le QR code à l’accueil et dans la salle.</li>
+      <li>Annoncer : « Scannez le QR code, remplissez le formulaire et signez au doigt. »</li>
+      <li>Suivre les arrivées en direct dans l’onglet <b>Émargements</b>.</li>
+      <li>Aider les personnes sans smartphone : elles peuvent signer sur le téléphone ou la tablette d’un organisateur.</li>
+    </ul>
+
+    <div class="when">Après l’évènement</div>
+    <ul class="tick">
+      <li>Cliquer sur la ligne de l’évènement, puis <b>Feuille d’émargement PDF</b> (laisser vide pour tous les jours).</li>
+      <li>Si besoin, <b>Export Excel, sans signatures</b> pour analyser les données.</li>
+      <li>Passer le <b>Statut</b> à <span class="pill closed">Clos</span>.</li>
+      <li>Archiver le PDF selon les règles de la structure.</li>
+    </ul>
+
+    <div class="box stop" style="margin-top:6mm"><span class="h">Les trois règles d’or</span>
+      <ul style="margin:0;padding-left:5mm">
+        <li>Ne jamais modifier la colonne <b>Jeton</b>.</li>
+        <li>Toujours <b>cliquer sur la ligne de l’évènement</b> avant d’utiliser le menu (QR code, PDF, Excel).</li>
+        <li>Ne pas déplacer ni supprimer les fichiers du dossier « Émargement — signatures ».</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

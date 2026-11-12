@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <base target="_blank">
+  <meta charset="utf-8">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; color: #111; }
+    /* Fenêtre dans la feuille */
+    .dialog { padding: 8px; text-align: center; }
+    .dialog #qr { display: inline-block; padding: 12px; background: #fff; border: 1px solid #ddd; }
+    .dialog .url { font-size: 12px; word-break: break-all; margin: 10px 0; }
+    .dialog .btn { display: inline-block; margin: 4px; padding: 8px 14px; border-radius: 4px; border: 1px solid #1a73e8;
+      color: #1a73e8; background: #fff; text-decoration: none; font-size: 14px; cursor: pointer; }
+    .dialog .btn.primary { background: #1a73e8; color: #fff; }
+    .dialog .hint { font-size: 12px; color: #666; }
+    /* Affiche A4 */
+    @page { size: A4 portrait; margin: 0; }
+    .poster-page { background: #ddd; }
+    .sheet { width: 210mm; height: 297mm; margin: 10mm auto; background: #fff; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding: 12mm 18mm; text-align: center; overflow: hidden; }
+    .sheet h1 { font-size: 26pt; margin: 0 0 4mm; }
+    .sheet .dates { font-size: 14pt; margin-bottom: 10mm; }
+    .sheet .call { font-size: 20pt; font-weight: bold; margin-bottom: 8mm; }
+    .sheet .call span { display: block; font-size: 14pt; font-weight: normal; font-style: italic; }
+    .sheet #qr img, .sheet #qr canvas { width: 110mm !important; height: 110mm !important; }
+    .sheet .url { margin-top: 6mm; font-size: 10pt; word-break: break-all; }
+    .toolbar { text-align: center; margin: 10mm 0 0; }
+    .toolbar button { font-size: 12pt; padding: 6px 18px; }
+    @media print { .poster-page { background: none; } .sheet { margin: 0; } .toolbar { display: none; } }
+  </style>
+</head>
+<? if (dialog) { ?>
+<body>
+<div class="dialog">
+  <div id="qr"></div>
+  <div class="url"><?= signUrl ?></div>
+  <? if (event.status !== 'Ouvert') { ?>
+    <p style="color:#b45309;font-size:13px">Statut actuel : <?= event.status ?>. Passez-le à « Ouvert » dans l’onglet Évènements pour que la page accepte les signatures.</p>
+  <? } ?>
+  <a class="btn primary" href="<?= posterUrl ?>">Ouvrir l’affiche à imprimer</a>
+  <a class="btn" href="<?= signUrl ?>">Tester la page d’émargement</a>
+  <a class="btn" id="download" download="qr-emargement.png">Télécharger le QR (PNG)</a>
+  <p class="hint">Si le téléchargement ne démarre pas : clic droit sur le QR code &gt; « Enregistrer l’image sous… ».</p>
+</div>
+<script>
+  var qr = new QRCode(document.getElementById('qr'), {text: <?!= JSON.stringify(signUrl).replace(/</g, '\\u003c') ?>,
+    width: 300, height: 300, correctLevel: QRCode.CorrectLevel.M});
+  setTimeout(function () {
+    var canvas = document.querySelector('#qr canvas');
+    if (canvas) document.getElementById('download').href = canvas.toDataURL('image/png');
+  }, 300);
+</script>
+</body>
+<? } else { ?>
+<body class="poster-page">
+<div class="toolbar"><button onclick="window.print()">Imprimer ou enregistrer en PDF</button></div>
+<div class="sheet">
+  <h1><?= event.title ?></h1>
+  <div class="dates"><? if (event.oneDay) { ?><?= event.start ?><? } else { ?><?= event.start ?> – <?= event.end ?><? } ?></div>
+  <div class="call">Scannez pour émarger<span>Scan to sign the attendance list</span></div>
+  <div id="qr"></div>
+  <div class="url"><?= signUrl ?></div>
+</div>
+<script>
+  new QRCode(document.getElementById('qr'), {text: <?!= JSON.stringify(signUrl).replace(/</g, '\\u003c') ?>,
+    width: 800, height: 800, correctLevel: QRCode.CorrectLevel.M});
+</script>
+</body>
+<? } ?>
+</html>
